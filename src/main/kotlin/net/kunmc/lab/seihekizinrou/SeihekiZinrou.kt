@@ -4,7 +4,6 @@ import dev.kotx.flylib.*
 import dev.kotx.flylib.command.*
 import dev.kotx.flylib.utils.*
 import io.papermc.paper.event.player.*
-import org.bukkit.boss.*
 import org.bukkit.entity.*
 import org.bukkit.plugin.java.*
 import java.util.*
@@ -18,10 +17,10 @@ class SeihekiZinrou : JavaPlugin() {
                 if (State.isWaitingInput) {
                     State.seihekiList.removeIf { it.player.uniqueId == event.player.uniqueId }
                     State.seihekiList.add(Seiheki(event.player, event.message().content()))
-                    event.isCancelled = true
                     if (event.player.server.onlinePlayers.all { serverPlayer -> State.seihekiList.any { it.player.uniqueId == serverPlayer.uniqueId } }) {
-                        State.isWaitingInput = false
+                        select()
                     }
+                    event.isCancelled = true
                 }
             }
 
@@ -34,13 +33,14 @@ class SeihekiZinrou : JavaPlugin() {
     }
 }
 
+private fun select() {
+    State.isWaitingInput = false
+    State.waitingCount = 0
+    State.waitingTimer.cancel()
+}
+
 object StartCommand : Command("start") {
     override fun CommandContext.execute() {
-
-        server!!.onlinePlayers.forEach {
-            it.send("自身の性癖を入力してください！(時間内であれば何度でも入力し直せます。)")
-        }
-
         plugin.reloadConfig()
         val selectTime = plugin.config.getInt("selectTime")
 
@@ -49,36 +49,25 @@ object StartCommand : Command("start") {
         State.waitingTimer.cancel()
         State.waitingTimer = Timer()
 
-        State.waitingBar = server!!.createBossBar(
-            "残り時間",
-            BarColor.BLUE,
-            BarStyle.SEGMENTED_10,
-            BarFlag.CREATE_FOG
-        ).apply {
-            server!!.onlinePlayers.forEach {
-                addPlayer(it)
-            }
-        }
-
         State.waitingTimer.scheduleAtFixedRate(0, 1000) {
             State.waitingCount++
 
-            State.waitingBar?.progress = State.waitingCount.toDouble() / selectTime
-
-            if (State.waitingCount >= selectTime) {
-                State.isWaitingInput = false
-                State.waitingBar?.isVisible = false
-                State.waitingBar = null
-                State.waitingCount = 0
-                cancel()
+            server?.onlinePlayers?.forEach {
+                it.sendActionBar("あなたの性癖を入力してください！(時間内であれば何度も再入力できます。) || 残り${selectTime - State.waitingCount}秒".asTextComponent())
             }
+
+            if (State.waitingCount >= selectTime) select()
         }
     }
 }
 
 object EndCommand : Command("end")
 
-object SelectCommand : Command("select")
+object SelectCommand : Command("select") {
+    override fun CommandContext.execute() {
+        select()
+    }
+}
 
 object ConfigCommand : Command("config") {
     override val children = mutableListOf(SelectTimeCommand, WerewolfNumberCommand)
@@ -130,7 +119,6 @@ object State {
     var isWaitingInput = false
     var waitingTimer = Timer()
     var waitingCount = 0
-    var waitingBar: BossBar? = null
     val seihekiList = mutableListOf<Seiheki>()
 }
 
