@@ -7,6 +7,7 @@ import io.papermc.paper.event.player.*
 import org.bukkit.entity.*
 import org.bukkit.plugin.java.*
 import java.util.*
+import java.util.concurrent.*
 import kotlin.concurrent.*
 
 class SeihekiZinrou : JavaPlugin() {
@@ -18,7 +19,7 @@ class SeihekiZinrou : JavaPlugin() {
                     State.seihekiList.removeIf { it.player.uniqueId == event.player.uniqueId }
                     State.seihekiList.add(Seiheki(event.player, event.message().content()))
                     if (event.player.server.onlinePlayers.all { serverPlayer -> State.seihekiList.any { it.player.uniqueId == serverPlayer.uniqueId } }) {
-                        select()
+                        select(this@SeihekiZinrou)
                     }
                     event.isCancelled = true
                 }
@@ -33,10 +34,17 @@ class SeihekiZinrou : JavaPlugin() {
     }
 }
 
-private fun select() {
+private fun select(
+    plugin: JavaPlugin
+) {
     State.isWaitingInput = false
     State.waitingCount = 0
     State.waitingTimer.cancel()
+
+    plugin.reloadConfig()
+    val number = plugin.config.getInt("werewolf_number")
+
+    State.werewolves = State.seihekiList.shuffled().subList(0, number)
 }
 
 object StartCommand : Command("start") {
@@ -56,7 +64,7 @@ object StartCommand : Command("start") {
                 it.sendActionBar("あなたの性癖を入力してください！(時間内であれば何度も再入力できます。) || 残り${selectTime - State.waitingCount}秒".asTextComponent())
             }
 
-            if (State.waitingCount >= selectTime) select()
+            if (State.waitingCount >= selectTime) select(plugin)
         }
     }
 }
@@ -65,7 +73,7 @@ object EndCommand : Command("end")
 
 object SelectCommand : Command("select") {
     override fun CommandContext.execute() {
-        select()
+        select(plugin)
     }
 }
 
@@ -120,6 +128,7 @@ object State {
     var waitingTimer = Timer()
     var waitingCount = 0
     val seihekiList = mutableListOf<Seiheki>()
+    var werewolves: List<Seiheki> = emptyList()
 }
 
 data class Seiheki(val player: Player, val seiheki: String)
