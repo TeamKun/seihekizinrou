@@ -1,0 +1,27 @@
+name: Release
+on:
+  push:
+    branches:
+      - master
+jobs:
+  check_and_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Grant read permission for gradle configuration file
+        run: chmod +r ./build.gradle.kts
+
+      - name: Add permission to release scripts.
+        run: chmod +x ./release.sh
+
+      - name: Check if it can be released
+        run: ./release.sh
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: "./output/**"
+          tag_name: ${{ env.RELEASE_VERSION }}
