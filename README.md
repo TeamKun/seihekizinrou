@@ -30,6 +30,7 @@
 `/szinrou end` 現在プレイ中のゲームを強制的に終了します。  
 `/szinrou select` 性癖入力中に、90秒が経過していなくても、全員が性癖を入力し終えていなくても、強制的に性癖入力を終了し、ゲームを開始します。  
 `/szinrou config select_time <seconds>` 性癖入力時間を調整します。  
+`/szinrou config thinking_time <seconds>` 会議時間を調整します。  
 `/szinrou config werewolf_number <number>` ランダムに選択される人狼の数を調整します。  
 
 ## Installation

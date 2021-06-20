@@ -3,6 +3,7 @@ package net.kunmc.lab.seihekizinrou
 import dev.kotx.flylib.*
 import dev.kotx.flylib.command.*
 import dev.kotx.flylib.command.Command
+import dev.kotx.flylib.command.internal.*
 import dev.kotx.flylib.utils.*
 import io.papermc.paper.event.player.*
 import net.kyori.adventure.text.format.*
@@ -30,6 +31,9 @@ class SeihekiZinrou : JavaPlugin() {
             }
 
             command {
+                defaultConfiguration {
+                    permission(Permission.OP)
+                }
                 register("szinrou") {
                     child(StartCommand, StartCommand, EndCommand, SelectCommand, ConfigCommand)
                 }
