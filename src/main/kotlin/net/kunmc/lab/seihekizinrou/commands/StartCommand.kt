@@ -5,7 +5,9 @@ import dev.kotx.flylib.utils.*
 import kotlinx.coroutines.*
 import net.kunmc.lab.seihekizinrou.*
 import net.kyori.adventure.text.format.*
-import java.awt.*
+import org.bukkit.*
+import org.bukkit.inventory.meta.*
+import java.awt.Color
 import java.util.*
 import kotlin.concurrent.*
 
@@ -67,10 +69,10 @@ object StartCommand : Command("start") {
 
         val werewolfNumber = plugin.config.getInt("werewolf_number")
 
-        if (werewolfNumber >= SeihekiZinrou.propensities.size) {
-            server!!.sendActionBar("参加人数が設定された人狼の数より少ないためゲームを開始出来ませんでした。".asTextComponent(Color.RED))
-            return
-        }
+//        if (werewolfNumber >= SeihekiZinrou.propensities.size) {
+//            server!!.sendActionBar("参加人数が設定された人狼の数より少ないためゲームを開始出来ませんでした。".asTextComponent(Color.RED))
+//            return
+//        }
 
         delay(2000)
 
@@ -97,10 +99,37 @@ object StartCommand : Command("start") {
                         append("村人", Style.style(TextColor.color(Color.GREEN.rgb), TextDecoration.BOLD))
                     append("です。")
                 },
+                1,
                 3,
-                3,
-                3
+                1
             )
+        }
+
+        delay(5000)
+
+        server!!.title(
+            "${werewolfNumber}人の人狼の性癖が公表されました...".asTextComponent(),
+            "配られた本を確認してください...".asTextComponent(),
+            1,
+            3,
+            1
+        )
+
+        val book = item(Material.WRITTEN_BOOK).apply {
+            itemMeta = (itemMeta as BookMeta).apply {
+                author("ゲームマスター".asTextComponent())
+                title("人狼の性癖".asTextComponent())
+                pages(text {
+                    SeihekiZinrou.propensities.filter { it.werewolf }.forEach {
+                        append("- ", Color.GRAY).append(it.propensity, Color.ORANGE)
+                        appendln()
+                    }
+                })
+            }
+        }
+
+        SeihekiZinrou.propensities.forEach {
+            it.player.inventory.addItem(book)
         }
     }
 }
