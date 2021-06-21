@@ -1,3 +1,4 @@
-selectTime: 90
-thinkingTime: 120
-werewolfNumber: 3
+time_input: 90
+time_day: 120
+time_night: 30
+werewolf_number: 3
