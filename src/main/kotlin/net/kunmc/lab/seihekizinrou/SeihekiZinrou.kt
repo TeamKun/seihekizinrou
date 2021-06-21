@@ -22,6 +22,6 @@ class SeihekiZinrou : JavaPlugin() {
     }
 
     companion object {
-        
+        val propensities = mutableListOf<Propensity>()
     }
 }
