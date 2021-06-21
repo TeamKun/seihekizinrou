@@ -1,21 +1,22 @@
 package net.kunmc.lab.seihekizinrou
 
 import dev.kotx.flylib.utils.*
+import net.kyori.adventure.text.*
 import net.kyori.adventure.title.*
 import org.bukkit.*
 import java.time.*
 
-fun Server.showTitle(
-    title: String,
-    subTitle: String,
+fun Server.title(
+    title: Component,
+    subTitle: Component,
     fadeInSeconds: Int,
     staySeconds: Int,
     fadeOutSeconds: Int,
 ) {
     showTitle(
         Title.title(
-            title.asTextComponent(),
-            subTitle.asTextComponent(),
+            title,
+            subTitle,
             Title.Times.of(
                 Duration.ofSeconds(fadeInSeconds.toLong()),
                 Duration.ofSeconds(staySeconds.toLong()),
@@ -23,4 +24,8 @@ fun Server.showTitle(
             )
         )
     )
+}
+
+fun Server.actionBar(text: String) {
+    sendActionBar(text.asTextComponent())
 }

@@ -40,7 +40,7 @@ fi
 
 REPOSITORY_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}')
 
-PROJECT_VERSION=$(cat $TARGET_FILE | grep -m 1 "val projectVersion = " | awk 'match($0, /val projectVersion = "(.+)"/, groups) { print groups[1] }')
+PROJECT_VERSION=$(cat $TARGET_FILE | grep -m 1 "version = " | awk 'match($0, /version = "(.+)"/, groups) { print groups[1] }')
 REMOTE_LATEST_VERSION=$(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
 IS_RELEASEABLE=$(semanticVersionToAbstractValue $PROJECT_VERSION $REMOTE_LATEST_VERSION)
