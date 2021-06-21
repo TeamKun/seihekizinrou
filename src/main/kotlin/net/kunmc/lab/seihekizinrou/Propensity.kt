@@ -4,5 +4,7 @@ import org.bukkit.entity.*
 
 data class Propensity(
     val player: Player,
-    val propensity: String
-)
+    val propensity: String,
+) {
+    var werewolf: Boolean = false
+}

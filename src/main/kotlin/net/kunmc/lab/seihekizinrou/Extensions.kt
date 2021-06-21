@@ -1,11 +1,11 @@
 package net.kunmc.lab.seihekizinrou
 
+import net.kyori.adventure.audience.*
 import net.kyori.adventure.text.*
 import net.kyori.adventure.title.*
-import org.bukkit.*
 import java.time.*
 
-fun Server.title(
+fun Audience.title(
     title: Component,
     subTitle: Component,
     fadeInSeconds: Int,
