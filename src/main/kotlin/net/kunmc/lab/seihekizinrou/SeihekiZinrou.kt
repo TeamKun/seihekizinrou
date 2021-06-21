@@ -23,5 +23,6 @@ class SeihekiZinrou : JavaPlugin() {
 
     companion object {
         val propensities = mutableListOf<Propensity>()
+        var werewolves = listOf<String>()
     }
 }

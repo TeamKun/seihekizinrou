@@ -36,7 +36,7 @@ object ConfigCommand : Command("config") {
             }
 
             2 -> {
-                plugin.config.set(args[0], args[1])
+                plugin.config.set(args[0], args[1].toInt())
                 plugin.saveConfig()
 
                 send {

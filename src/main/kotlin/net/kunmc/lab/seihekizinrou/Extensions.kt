@@ -1,6 +1,5 @@
 package net.kunmc.lab.seihekizinrou
 
-import dev.kotx.flylib.utils.*
 import net.kyori.adventure.text.*
 import net.kyori.adventure.title.*
 import org.bukkit.*
@@ -24,8 +23,4 @@ fun Server.title(
             )
         )
     )
-}
-
-fun Server.actionBar(text: String) {
-    sendActionBar(text.asTextComponent())
 }
