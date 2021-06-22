@@ -5,22 +5,32 @@ import dev.kotx.flylib.menu.menus.*
 import dev.kotx.flylib.utils.*
 import kotlinx.coroutines.*
 import net.kunmc.lab.seihekizinrou.*
+import net.kyori.adventure.sound.Sound
 import net.kyori.adventure.text.format.*
 import org.bukkit.*
 import org.bukkit.entity.*
 import org.bukkit.inventory.meta.*
+import org.bukkit.potion.*
 import java.awt.Color
 import java.util.*
 import kotlin.concurrent.*
 
 object StartCommand : Command("start") {
-    private var timer = Timer()
-    private var count = 0
+    internal var timer = Timer()
+    internal var count = 0
     var isWaiting = false
 
     private val scope = CoroutineScope(Dispatchers.Default)
 
     override fun CommandContext.execute() {
+        server!!.playSound(
+            Sound.sound(
+                org.bukkit.Sound.AMBIENT_CAVE.key,
+                Sound.Source.AMBIENT,
+                1f,
+                1f
+            )
+        )
         server!!.title(
             "性癖人狼".component(Color.RED, TextDecoration.BOLD),
             "自分の性癖をチャットに入力してください".component(),
@@ -129,6 +139,10 @@ object StartCommand : Command("start") {
 
         delay(6000)
 
+        dayTime()
+    }
+
+    fun CommandContext.dayTime() {
         timer.cancel()
         timer = Timer()
         plugin.reloadConfig()
@@ -180,11 +194,48 @@ object StartCommand : Command("start") {
 
             if (count == 15) title("残り15秒".component(), "".component(), 1, 3, 1)
 
-            actionbar("人狼を推測し、誰を処刑するかを決めてください。 || 残り${count}秒".component())
+            actionbar("人狼を推測し、誰を処刑するかを話し合ってください。 || 残り${count}秒".component())
         }
     }
 
-    fun CommandContext.punishment() {
+    suspend fun CommandContext.punishment() {
+        val target = SeihekiZinrou.propensities.maxByOrNull { it.votes.size }!!
+        target.player.gameMode = GameMode.SPECTATOR
 
+        target.player.title(
+            "あなたは処刑されました。".component(),
+            "ゲームが終了するまではチャットは出来ません。".component(),
+            1,
+            5,
+            1
+        )
+
+        SeihekiZinrou.propensities.filter { !it.dead }.forEach {
+            it.player.title(
+                "${target.player.name}が処刑されました。".component(),
+                "死んだプレイヤーはゲームが終了するまでチャットをすることが出来ません。".component(),
+                1,
+                5,
+                1
+            )
+        }
+
+        delay(6000)
+
+        SeihekiZinrou.propensities.forEach {
+            it.player.addPotionEffect(PotionEffect(PotionEffectType.BLINDNESS, 2, 255, false, false, false))
+        }
+        title("間もなく夜が来ます...".component(), "".component(), 1, 5, 1)
+        world!!.time = 12000
+        delay(7000)
+    }
+
+
+    suspend fun CommandContext.nightTime() {
+        SeihekiZinrou.propensities.forEach {
+            it.player.addPotionEffect(PotionEffect(PotionEffectType.BLINDNESS, 2, 255, false, false, false))
+        }
+        title("夜が来ました。人狼は誰を殺害するかを決めてください。".component(), "".component(), 1, 5, 1)
+        world!!.time = 18000
     }
 }

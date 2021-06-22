@@ -12,11 +12,17 @@ class SeihekiZinrou : JavaPlugin() {
         saveDefaultConfig()
         flyLib {
             listen<AsyncChatEvent> { event ->
-                if (!StartCommand.isWaiting) return@listen
+                if (StartCommand.isWaiting) {
+                    propensities.removeIf { it.player.uniqueId == event.player.uniqueId }
+                    propensities.add(Propensity(event.player, event.message().content()))
+                    event.isCancelled = true
+                    return@listen
+                }
 
-                propensities.removeIf { it.player.uniqueId == event.player.uniqueId }
-                propensities.add(Propensity(event.player, event.message().content()))
-                event.isCancelled = true
+                if (propensities.find { it.player.uniqueId == event.player.uniqueId }?.dead == true) {
+                    event.isCancelled = true
+                    return@listen
+                }
             }
 
             command {
