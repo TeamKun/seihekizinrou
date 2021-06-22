@@ -130,9 +130,17 @@ object StartCommand : Command("start") {
         plugin.reloadConfig()
         count = plugin.config.getInt("time_day")
 
+        val selector = item(Material.STICK) {
+            displayName("右クリックして処刑者を選択")
+        }
+
         timer.scheduleAtFixedRate(1000, 1000) {
             count--
             if (count <= 0) {
+                SeihekiZinrou.propensities.forEach {
+                    it.player.inventory.remove(selector)
+                    selector.unRegister()
+                }
                 scope.launch { punishment() }
                 cancel()
                 return@scheduleAtFixedRate
@@ -140,9 +148,6 @@ object StartCommand : Command("start") {
 
             if (count == 30) {
                 title("残り30秒".component(), "処刑者を選択するアイテムが与えられました。".component(), 1, 3, 1)
-                val selector = item(Material.STICK) {
-                    displayName("右クリックして処刑者を選択")
-                }
 
                 server!!.onlinePlayers.forEach {
                     selector.onClick(it) { event ->
@@ -154,10 +159,12 @@ object StartCommand : Command("start") {
                                         owningPlayer = propensity.player
                                     }
                                 }) {
-                                    event.player.send("You clicked: ${(it.currentItem!!.itemMeta as SkullMeta).owningPlayer!!.name}")
+                                    event.player.send("You clicked: ${propensity.player.name}")
                                 }
                             }
                         }
+
+                        false
                     }
 
                     it.inventory.addItem(selector)
