@@ -25,7 +25,7 @@ object StartCommand : Command("start") {
             "性癖人狼".component(Color.RED, TextDecoration.BOLD),
             "自分の性癖をチャットに入力してください".component(),
             1,
-            5,
+            7,
             1
         )
         isWaiting = true
@@ -35,12 +35,13 @@ object StartCommand : Command("start") {
         plugin.reloadConfig()
         count = plugin.config.getInt("time_input")
 
+        runBlocking { delay(2000) }
         timer.scheduleAtFixedRate(1000, 1000) {
             count--
 
             if (count > 0) {
                 val last = server!!.onlinePlayers.size - SeihekiZinrou.propensities.size
-                server!!.sendActionBar("${last}人の性癖の入力を待機中... || 開始まで残り${count}秒".component())
+                server!!.sendActionBar("自分の性癖をチャットに入力してください || ${last}人の入力を待機中... || 残り${count}秒".component())
 
                 if (last == 0) {
                     scope.launch { start() }
@@ -69,14 +70,14 @@ object StartCommand : Command("start") {
         delay(2000)
 
         title(
-            "あなたの役職が発表されます...".component(),
+            "間もなく役職が発表されます...".component(),
             "".component(),
             1,
             3,
             1
         )
 
-        delay(6000)
+        delay(7000)
         SeihekiZinrou.propensities.shuffle()
         SeihekiZinrou.propensities.subList(0, werewolfNumber).forEach { it.werewolf = true }
 
@@ -94,12 +95,12 @@ object StartCommand : Command("start") {
                     append(if (it.werewolf) "自分の性癖がバレないように立ち回り、村人を襲ってください。" else "公表された性癖を持つ人狼を推測し、なるべく早く処刑してください。")
                 },
                 1,
-                5,
+                7,
                 1
             )
         }
 
-        delay(8000)
+        delay(10000)
 
         val book = item(Material.WRITTEN_BOOK) {
             meta {
@@ -125,6 +126,8 @@ object StartCommand : Command("start") {
             5,
             1
         )
+
+        delay(6000)
 
         timer.cancel()
         timer = Timer()
@@ -154,7 +157,8 @@ object StartCommand : Command("start") {
                     SeihekiZinrou.propensities.forEachIndexed { i, propensity ->
                         item(i, item(Material.PLAYER_HEAD) {
                             displayName(propensity.player.name)
-                            meta { this as SkullMeta
+                            meta {
+                                this as SkullMeta
                                 owningPlayer = propensity.player
                             }
                         }) { event ->
@@ -181,11 +185,6 @@ object StartCommand : Command("start") {
     }
 
     fun CommandContext.punishment() {
-        SeihekiZinrou.propensities.forEach {
-            println("${it.player.name}:")
-            println("Propensity: ${it.propensity}")
-            println("Werewolf: ${it.werewolf}")
-            println("Votes: ${it.votes.joinToString { it.name }}")
-        }
+
     }
 }
