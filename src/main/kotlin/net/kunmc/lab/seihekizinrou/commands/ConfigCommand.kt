@@ -1,7 +1,6 @@
 package net.kunmc.lab.seihekizinrou.commands
 
 import dev.kotx.flylib.command.*
-import dev.kotx.flylib.utils.*
 import java.awt.*
 
 object ConfigCommand : Command("config") {
@@ -12,7 +11,7 @@ object ConfigCommand : Command("config") {
         }
         usage {
             literalArgument("time_day")
-            intArgument("seconds", 1)
+            intArgument("seconds", 30)
         }
         usage {
             literalArgument("time_night")
