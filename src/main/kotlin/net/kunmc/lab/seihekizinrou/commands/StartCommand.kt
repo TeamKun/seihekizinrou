@@ -25,7 +25,7 @@ object StartCommand : Command("start") {
             "性癖人狼".component(Color.RED, TextDecoration.BOLD),
             "自分の性癖をチャットに入力してください".component(),
             1,
-            3,
+            5,
             1
         )
         isWaiting = true
@@ -150,22 +150,23 @@ object StartCommand : Command("start") {
             if (count == 30) {
                 title("残り30秒".component(), "処刑者を選択するアイテムが与えられました。".component(), 1, 3, 1)
 
+                val menu = ChestMenu.menu {
+                    SeihekiZinrou.propensities.forEachIndexed { i, propensity ->
+                        item(i, item(Material.PLAYER_HEAD) {
+                            displayName(propensity.player.name)
+                            meta { this as SkullMeta
+                                owningPlayer = propensity.player
+                            }
+                        }) { event ->
+                            SeihekiZinrou.propensities.forEach { it.votes.removeIf { it.uniqueId == event.whoClicked.uniqueId } }
+                            propensity.votes.add(event.whoClicked as Player)
+                        }
+                    }
+                }
+
                 server!!.onlinePlayers.forEach {
                     selector.onClick(it) { event ->
-                        ChestMenu.display(event.player) {
-                            SeihekiZinrou.propensities.forEachIndexed { i, propensity ->
-                                item(i, item(Material.PLAYER_HEAD) {
-                                    displayName(propensity.player.name)
-                                    meta { this as SkullMeta
-                                        owningPlayer = propensity.player
-                                    }
-                                }) { event ->
-                                    SeihekiZinrou.propensities.forEach { it.votes.removeIf { it.uniqueId == event.whoClicked.uniqueId } }
-                                    propensity.votes.add(event.whoClicked as Player)
-                                }
-                            }
-                        }
-
+                        menu.display(event.player)
                         false
                     }
 
@@ -180,6 +181,11 @@ object StartCommand : Command("start") {
     }
 
     fun CommandContext.punishment() {
-
+        SeihekiZinrou.propensities.forEach {
+            println("${it.player.name}:")
+            println("Propensity: ${it.propensity}")
+            println("Werewolf: ${it.werewolf}")
+            println("Votes: ${it.votes.joinToString { it.name }}")
+        }
     }
 }
