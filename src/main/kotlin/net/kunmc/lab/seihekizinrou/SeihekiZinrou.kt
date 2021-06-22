@@ -16,6 +16,7 @@ class SeihekiZinrou : JavaPlugin() {
 
                 propensities.removeIf { it.player.uniqueId == event.player.uniqueId }
                 propensities.add(Propensity(event.player, event.message().content()))
+                event.isCancelled = true
             }
 
             command {
