@@ -7,6 +7,7 @@ import kotlinx.coroutines.*
 import net.kunmc.lab.seihekizinrou.*
 import net.kyori.adventure.text.format.*
 import org.bukkit.*
+import org.bukkit.entity.*
 import org.bukkit.inventory.meta.*
 import java.awt.Color
 import java.util.*
@@ -158,8 +159,9 @@ object StartCommand : Command("start") {
                                     meta { this as SkullMeta
                                         owningPlayer = propensity.player
                                     }
-                                }) {
-                                    event.player.send("You clicked: ${propensity.player.name}")
+                                }) { event ->
+                                    SeihekiZinrou.propensities.forEach { it.votes.removeIf { it.uniqueId == event.whoClicked.uniqueId } }
+                                    propensity.votes.add(event.whoClicked as Player)
                                 }
                             }
                         }

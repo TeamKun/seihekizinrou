@@ -7,4 +7,5 @@ data class Propensity(
     val propensity: String,
 ) {
     var werewolf: Boolean = false
+    var votes: MutableList<Player> = mutableListOf()
 }
