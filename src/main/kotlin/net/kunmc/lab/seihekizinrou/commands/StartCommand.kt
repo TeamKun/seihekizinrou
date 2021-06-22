@@ -10,7 +10,6 @@ import net.kyori.adventure.text.format.*
 import org.bukkit.*
 import org.bukkit.entity.*
 import org.bukkit.inventory.meta.*
-import org.bukkit.potion.*
 import java.awt.Color
 import java.util.*
 import kotlin.concurrent.*
@@ -133,16 +132,17 @@ object StartCommand : Command("start") {
             "${werewolfNumber}人の人狼の性癖が公表されました。".component(),
             "配られた本に書かれてある性癖を元に人狼を推測し、処刑対象を話し合ってください。".component(),
             1,
-            5,
+            6,
             1
         )
 
-        delay(6000)
+        delay(7000)
 
         dayTime()
     }
 
     fun CommandContext.dayTime() {
+        world!!.animateTime(plugin, 1000)
         timer.cancel()
         timer = Timer()
         plugin.reloadConfig()
@@ -178,6 +178,7 @@ object StartCommand : Command("start") {
                         }) { event ->
                             SeihekiZinrou.propensities.forEach { it.votes.removeIf { it.uniqueId == event.whoClicked.uniqueId } }
                             propensity.votes.add(event.whoClicked as Player)
+                            event.whoClicked.closeInventory()
                         }
                     }
                 }
@@ -200,7 +201,9 @@ object StartCommand : Command("start") {
 
     suspend fun CommandContext.punishment() {
         val target = SeihekiZinrou.propensities.maxByOrNull { it.votes.size }!!
-        target.player.gameMode = GameMode.SPECTATOR
+        plugin.runSync {
+                target.player.gameMode = GameMode.SPECTATOR
+        }
 
         target.player.title(
             "あなたは処刑されました。".component(),
@@ -219,23 +222,16 @@ object StartCommand : Command("start") {
                 1
             )
         }
-
-        delay(6000)
-
-        SeihekiZinrou.propensities.forEach {
-            it.player.addPotionEffect(PotionEffect(PotionEffectType.BLINDNESS, 2, 255, false, false, false))
-        }
-        title("間もなく夜が来ます...".component(), "".component(), 1, 5, 1)
-        world!!.time = 12000
         delay(7000)
+        world!!.animateTime(plugin, 12800, 120)
+        title("間もなく夜が来ます...".component(), "".component(), 1, 5, 1)
+        delay(7000)
+
+        nightTime()
     }
 
-
     suspend fun CommandContext.nightTime() {
-        SeihekiZinrou.propensities.forEach {
-            it.player.addPotionEffect(PotionEffect(PotionEffectType.BLINDNESS, 2, 255, false, false, false))
-        }
-        title("夜が来ました。人狼は誰を殺害するかを決めてください。".component(), "".component(), 1, 5, 1)
-        world!!.time = 18000
+        world!!.animateTime(plugin, 18000, 120)
+        title("夜が来ました。".component(), "人狼は誰を殺害するかを決めてください。".component(), 1, 5, 1)
     }
 }
