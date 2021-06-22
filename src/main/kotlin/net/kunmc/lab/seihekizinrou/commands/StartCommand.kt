@@ -1,6 +1,7 @@
 package net.kunmc.lab.seihekizinrou.commands
 
 import dev.kotx.flylib.command.*
+import dev.kotx.flylib.menu.menus.*
 import dev.kotx.flylib.utils.*
 import kotlinx.coroutines.*
 import net.kunmc.lab.seihekizinrou.*
@@ -12,43 +13,33 @@ import java.util.*
 import kotlin.concurrent.*
 
 object StartCommand : Command("start") {
-    private var waitingTimer = Timer()
-    private var waitingCount = 0
+    private var timer = Timer()
+    private var count = 0
     var isWaiting = false
 
     private val scope = CoroutineScope(Dispatchers.Default)
 
     override fun CommandContext.execute() {
-        runBlocking {
-            server!!.title(
-                "まもなく開始されます...".asTextComponent(),
-                "".asTextComponent(),
-                1,
-                3,
-                1
-            )
-            delay(5000)
-        }
         server!!.title(
-            "性癖人狼".asTextComponent(Style.style(TextColor.color(Color.RED.rgb), TextDecoration.BOLD)),
-            "自分の性癖をチャットに入力してね！".asTextComponent(),
+            "性癖人狼".component(Color.RED, TextDecoration.BOLD),
+            "自分の性癖をチャットに入力してください".component(),
             1,
             3,
             1
         )
         isWaiting = true
-        waitingTimer.cancel()
-        waitingTimer = Timer()
+        timer.cancel()
+        timer = Timer()
         SeihekiZinrou.propensities.clear()
         plugin.reloadConfig()
-        waitingCount = plugin.config.getInt("time_input")
+        count = plugin.config.getInt("time_input")
 
-        waitingTimer.scheduleAtFixedRate(1000, 1000) {
-            waitingCount--
+        timer.scheduleAtFixedRate(1000, 1000) {
+            count--
 
-            if (waitingCount > 0) {
+            if (count > 0) {
                 val last = server!!.onlinePlayers.size - SeihekiZinrou.propensities.size
-                server!!.sendActionBar("${last}人の性癖の入力を待機中... || 開始まで残り${waitingCount}秒".asTextComponent())
+                server!!.sendActionBar("${last}人の性癖の入力を待機中... || 開始まで残り${count}秒".component())
 
                 if (last == 0) {
                     scope.launch { start() }
@@ -64,9 +55,9 @@ object StartCommand : Command("start") {
     }
 
     private suspend fun CommandContext.start() {
-        plugin.reloadConfig()
         isWaiting = false
 
+        plugin.reloadConfig()
         val werewolfNumber = plugin.config.getInt("werewolf_number")
 
 //        if (werewolfNumber >= SeihekiZinrou.propensities.size) {
@@ -76,60 +67,110 @@ object StartCommand : Command("start") {
 
         delay(2000)
 
-        server!!.title(
-            "あなたの役職が発表されます...".asTextComponent(),
-            "".asTextComponent(),
+        title(
+            "あなたの役職が発表されます...".component(),
+            "".component(),
             1,
             3,
             1
         )
 
-        delay(5000)
+        delay(6000)
         SeihekiZinrou.propensities.shuffle()
         SeihekiZinrou.propensities.subList(0, werewolfNumber).forEach { it.werewolf = true }
 
         SeihekiZinrou.propensities.forEach {
             it.player.title(
-                "役職発表".asTextComponent(),
+                "役職発表".component(),
                 text {
                     append("あなたは")
                     if (it.werewolf)
-                        append("人狼", Style.style(TextColor.color(Color.RED.rgb), TextDecoration.BOLD))
+                        bold("人狼", Color.RED)
                     else
-                        append("村人", Style.style(TextColor.color(Color.GREEN.rgb), TextDecoration.BOLD))
+                        bold("村人", Color.GREEN)
                     append("です。")
+
+                    append(if (it.werewolf) "自分の性癖がバレないように立ち回り、村人を襲ってください。" else "公表された性癖を持つ人狼を推測し、なるべく早く処刑してください。")
                 },
                 1,
-                3,
+                5,
                 1
             )
         }
 
-        delay(5000)
+        delay(8000)
 
-        server!!.title(
-            "${werewolfNumber}人の人狼の性癖が公表されました...".asTextComponent(),
-            "配られた本を確認してください...".asTextComponent(),
-            1,
-            3,
-            1
-        )
-
-        val book = item(Material.WRITTEN_BOOK).apply {
-            itemMeta = (itemMeta as BookMeta).apply {
-                author("ゲームマスター".asTextComponent())
-                title("人狼の性癖".asTextComponent())
-                pages(text {
+        val book = item(Material.WRITTEN_BOOK) {
+            meta {
+                this as BookMeta
+                title("人狼の性癖".component())
+                author("ゲームマスター".component())
+                page {
                     SeihekiZinrou.propensities.filter { it.werewolf }.forEach {
-                        append("- ", Color.GRAY).append(it.propensity, Color.ORANGE)
-                        appendln()
+                        append("・", Color.GRAY).append(it.propensity, Color.ORANGE).appendln()
                     }
-                })
+                }
             }
         }
 
         SeihekiZinrou.propensities.forEach {
             it.player.inventory.addItem(book)
         }
+
+        title(
+            "${werewolfNumber}人の人狼の性癖が公表されました。".component(),
+            "配られた本に書かれてある性癖を元に人狼を推測し、処刑対象を話し合ってください。".component(),
+            1,
+            5,
+            1
+        )
+
+        timer.cancel()
+        timer = Timer()
+        plugin.reloadConfig()
+        count = plugin.config.getInt("time_day")
+
+        timer.scheduleAtFixedRate(1000, 1000) {
+            count--
+            if (count <= 0) {
+                scope.launch { punishment() }
+                cancel()
+                return@scheduleAtFixedRate
+            }
+
+            if (count == 30) {
+                title("残り30秒".component(), "処刑者を選択するアイテムが与えられました。".component(), 1, 3, 1)
+                val selector = item(Material.STICK) {
+                    displayName("右クリックして処刑者を選択")
+                }
+
+                server!!.onlinePlayers.forEach {
+                    selector.onClick(it) { event ->
+                        ChestMenu.display(event.player) {
+                            SeihekiZinrou.propensities.forEachIndexed { i, propensity ->
+                                item(i, item(Material.PLAYER_HEAD) {
+                                    displayName(propensity.player.name)
+                                    meta { this as SkullMeta
+                                        owningPlayer = propensity.player
+                                    }
+                                }) {
+                                    event.player.send("You clicked: ${(it.currentItem!!.itemMeta as SkullMeta).owningPlayer!!.name}")
+                                }
+                            }
+                        }
+                    }
+
+                    it.inventory.addItem(selector)
+                }
+            }
+
+            if (count == 15) title("残り15秒".component(), "".component(), 1, 3, 1)
+
+            actionbar("人狼を推測し、誰を処刑するかを決めてください。 || 残り${count}秒".component())
+        }
+    }
+
+    fun CommandContext.punishment() {
+
     }
 }
