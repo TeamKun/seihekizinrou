@@ -24,3 +24,21 @@ fun Audience.title(
         )
     )
 }
+
+fun title(
+    title: Component,
+    subTitle: Component,
+    fadeInSeconds: Int,
+    staySeconds: Int,
+    fadeOutSeconds: Int,
+) {
+    SeihekiZinrou.propensities.forEach {
+        it.player.title(title, subTitle, fadeInSeconds, staySeconds, fadeOutSeconds)
+    }
+}
+
+fun actionbar(component: Component) {
+    SeihekiZinrou.propensities.forEach {
+        it.player.sendActionBar(component)
+    }
+}
