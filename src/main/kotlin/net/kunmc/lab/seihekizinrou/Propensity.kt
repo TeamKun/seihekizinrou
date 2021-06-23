@@ -6,7 +6,7 @@ data class Propensity(
     val player: Player,
     val propensity: String,
 ) {
-    var lastDead: Boolean = false
+    var killed: Boolean = false
 
     var dead: Boolean = false
     var werewolf: Boolean = false

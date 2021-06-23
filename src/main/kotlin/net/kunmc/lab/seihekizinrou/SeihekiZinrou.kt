@@ -27,7 +27,7 @@ class SeihekiZinrou : JavaPlugin() {
             }
 
             listen<PlayerMoveEvent> { event ->
-                if (step == Step.WAITING_KILL) event.isCancelled = true
+                if (step == Step.NIGHT) event.isCancelled = true
             }
 
             command {
@@ -56,7 +56,6 @@ class SeihekiZinrou : JavaPlugin() {
         DAY,
         SUNSET,
         NIGHT,
-        WAITING_KILL,
         FINISHED
     }
 }

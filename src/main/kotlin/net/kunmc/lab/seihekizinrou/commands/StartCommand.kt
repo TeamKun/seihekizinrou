@@ -12,6 +12,7 @@ import org.bukkit.enchantments.*
 import org.bukkit.entity.*
 import org.bukkit.inventory.*
 import org.bukkit.inventory.meta.*
+import org.bukkit.potion.*
 import java.awt.Color
 import java.util.*
 import kotlin.concurrent.*
@@ -158,7 +159,16 @@ object StartCommand : Command("start") {
         SeihekiZinrou.step = SeihekiZinrou.Step.MORNING
         world!!.animateTime(plugin, 0)
 
-        val deadPlayers = SeihekiZinrou.propensities.filter { it.lastDead }
+        server!!.playSound(
+            Sound.sound(
+                org.bukkit.Sound.ENTITY_PLAYER_LEVELUP.key,
+                Sound.Source.MASTER,
+                1f,
+                1f
+            )
+        )
+
+        val deadPlayers = SeihekiZinrou.propensities.filter { it.killed }
         if (deadPlayers.isEmpty()) {
             title(
                 "${SeihekiZinrou.day}日目の朝が来ました。".component(),
@@ -191,7 +201,7 @@ object StartCommand : Command("start") {
                     }
                 })
 
-                SeihekiZinrou.propensities.filterNot { it.lastDead }.forEach {
+                SeihekiZinrou.propensities.filterNot { it.killed }.forEach {
                     it.player.title(
                         "${SeihekiZinrou.day}日目の朝が来ました。".component(),
                         "昨晩${deadPlayers}人の村人が襲われました。".component(),
@@ -199,6 +209,11 @@ object StartCommand : Command("start") {
                     )
                 }
 
+                deadPlayers.toList().forEach { p ->
+                    val target = SeihekiZinrou.propensities.find { it.player.uniqueId == p.player.uniqueId }
+                    target?.killed = false
+                    target?.dead = false
+                }
             }
             delay(7000)
         }
@@ -373,9 +388,47 @@ object StartCommand : Command("start") {
         nightTime()
     }
 
-    private fun CommandContext.nightTime() {
+    private suspend fun CommandContext.nightTime() {
         SeihekiZinrou.step = SeihekiZinrou.Step.NIGHT
         world!!.animateTime(plugin, 14000)
-        title("夜が来ました。".component(), "人狼は誰を殺害するかを決めてください。".component(), 1, 5, 1)
+
+        plugin.reloadConfig()
+        val nightTime = plugin.config.getInt("time_night")
+
+        SeihekiZinrou.propensities.forEach {
+            plugin.runSync {
+                it.player.addPotionEffects(
+                    listOf(
+                        PotionEffect(
+                            PotionEffectType.INVISIBILITY,
+                            nightTime * 20,
+                            1,
+                            false,
+                            false,
+                            false
+                        ),
+                        PotionEffect(
+                            PotionEffectType.BLINDNESS,
+                            nightTime * 20,
+                            2,
+                            false,
+                            false,
+                            false
+                        )
+                    )
+                )
+            }
+
+            if (it.werewolf) {
+                title("夜が来ました。".component(), "誰を殺害するかを決めてください。".component(), 1, 5, 1)
+                ChestMenu.display(it.player) {
+
+                }
+            } else {
+                title("夜が来ました。".component(), "人狼の行動が終わるまで暫くお待ちください。".component(), 1, 5, 1)
+            }
+        }
+
+        delay(nightTime.toLong() * 1000)
     }
 }
