@@ -40,11 +40,7 @@ fun title(
     }
 }
 
-fun actionbar(component: Component) {
-    SeihekiZinrou.propensities.forEach {
-        it.player.sendActionBar(component)
-    }
-}
+operator fun Component.plus(component: Component) = this.append(component)
 
 fun JavaPlugin.runSync(action: () -> Unit) {
     object : BukkitRunnable() {
@@ -54,7 +50,7 @@ fun JavaPlugin.runSync(action: () -> Unit) {
     }.runTask(this)
 }
 
-fun World.animateTime(plugin: JavaPlugin, target: Int, duration: Int = 20) {
+fun World.animateTime(plugin: JavaPlugin, target: Int, duration: Int = 60) {
     val diff = if (target - time < 0)
         (target + 26000) - time
     else (target - time)

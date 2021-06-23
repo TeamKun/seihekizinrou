@@ -7,7 +7,6 @@ import java.util.*
 
 object EndCommand: Command("end") {
     override fun CommandContext.execute() {
-        StartCommand.isWaiting = false
         StartCommand.timer.cancel()
         StartCommand.timer = Timer()
         SeihekiZinrou.propensities.clear()
