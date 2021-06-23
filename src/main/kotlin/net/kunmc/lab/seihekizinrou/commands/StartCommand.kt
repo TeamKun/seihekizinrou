@@ -37,13 +37,32 @@ object StartCommand : Command("start") {
         plugin.reloadConfig()
         count = plugin.config.getInt("time_input")
 
+        server!!.playSound(
+            Sound.sound(
+                org.bukkit.Sound.AMBIENT_CAVE.key,
+                Sound.Source.MASTER,
+                2f,
+                .3f
+            )
+        )
+        world!!.animateTime(plugin, 22000, 100)
+
         runBlocking { delay(2000) }
         timer.scheduleAtFixedRate(1000, 1000) {
             count--
 
             if (count > 0) {
                 val last = server!!.onlinePlayers.size - SeihekiZinrou.propensities.size
-                server!!.sendActionBar("自分の性癖をチャットに入力してください || ${last}人の入力を待機中... || 残り${count}秒".component())
+                server!!.sendActionBar(text {
+                    +"自分の性癖をチャットに入力してください || ${last}人の入力を待機中... || "
+                    append(
+                        "残り${count}秒", when (count) {
+                            in 0..10 -> Color.RED
+                            in 10..30 -> Color.ORANGE
+                            else -> Color.GREEN
+                        }
+                    )
+                })
 
                 if (last == 0) {
                     scope.launch { start() }
@@ -71,7 +90,7 @@ object StartCommand : Command("start") {
         delay(2000)
 
         title(
-            "間もなく役職が発表されます...".component(),
+            "まもなく役職が発表されます...".component(),
             "".component(),
             1,
             3,
@@ -85,7 +104,7 @@ object StartCommand : Command("start") {
         server!!.playSound(
             Sound.sound(
                 org.bukkit.Sound.AMBIENT_CAVE.key,
-                Sound.Source.AMBIENT,
+                Sound.Source.MASTER,
                 2f,
                 .3f
             )
@@ -110,7 +129,25 @@ object StartCommand : Command("start") {
             )
         }
 
-        delay(10000)
+        delay(5000)
+
+        val wolves = SeihekiZinrou.propensities.filter { it.werewolf }
+        if (wolves.size > 1) wolves.forEach { wolf ->
+            wolf.player.send {
+                bold("--- ", Color.GRAY)
+                bold("自分以外の人狼", Color.RED)
+                bold(" ---", Color.GRAY)
+                wolves.filterNot { it.player.uniqueId == wolf.player.uniqueId }.forEach {
+                    bold(it.player.name, Color.GREEN)
+                    appendln(":", Color.GRAY)
+                    append("  >", Color.GREEN)
+                    appendln(" ${it.propensity}")
+                    appendln()
+                }
+            }
+        }
+
+        delay(5000)
 
         morning(true)
     }
@@ -175,7 +212,7 @@ object StartCommand : Command("start") {
                     author("ゲームマスター".component())
                     page {
                         boldln("----------------", Color.GRAY)
-                        appendln("人狼は${werewolfNumber}匹存在します。")
+                        appendln("人狼は${werewolfNumber}匹存在します。(ゲーム開始時の匹数)")
                         boldln("----------------", Color.GRAY)
                         appendln()
                         SeihekiZinrou.propensities.filter { it.werewolf }.forEach {
@@ -220,7 +257,7 @@ object StartCommand : Command("start") {
         plugin.reloadConfig()
         count = plugin.config.getInt("time_day")
 
-        val selector = item(Material.BOOK) {
+        val selector = item(Material.CLOCK) {
             enchant(Enchantment.LUCK)
             flag(ItemFlag.HIDE_ENCHANTS)
             displayName("右クリックして処刑者を選択")
@@ -272,8 +309,7 @@ object StartCommand : Command("start") {
             }
 
             if (count == 15) {
-                title("残り15秒".component(), "".component(), 1, 3, 1)
-                world!!.animateTime(plugin, 12800)
+                world!!.animateTime(plugin, 12800, 200)
             }
 
             SeihekiZinrou.propensities.forEach {
@@ -285,9 +321,9 @@ object StartCommand : Command("start") {
                         bold("村人", Color.GREEN).append("です。").append("人狼を推測し、誰を処刑するかを話し合ってください。")
 
                     when {
-                        count in 15..30 -> append(" || ").append("残り${count}秒", Color.ORANGE)
-                        count < 15 -> append(" || ").append("残り${count}秒", Color.RED)
-                        else -> append(" || 残り${count}秒")
+                        count in 10..30 -> append(" || ").append("残り${count}秒", Color.ORANGE)
+                        count < 10 -> append(" || ").append("残り${count}秒", Color.RED)
+                        else -> append(" || ").append("残り${count}秒", Color.GREEN)
                     }
                 })
             }
