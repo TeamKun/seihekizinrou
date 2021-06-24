@@ -159,17 +159,17 @@ object StartCommand : Command("start") {
         SeihekiZinrou.step = SeihekiZinrou.Step.MORNING
         world!!.animateTime(plugin, 0)
 
-        server!!.playSound(
-            Sound.sound(
-                org.bukkit.Sound.ENTITY_PLAYER_LEVELUP.key,
-                Sound.Source.MASTER,
-                1f,
-                1f
-            )
-        )
-
         val deadPlayers = SeihekiZinrou.propensities.filter { it.killed }
         if (deadPlayers.isEmpty()) {
+            server!!.playSound(
+                Sound.sound(
+                    org.bukkit.Sound.ENTITY_PLAYER_LEVELUP.key,
+                    Sound.Source.MASTER,
+                    1f,
+                    1f
+                )
+            )
+
             title(
                 "${SeihekiZinrou.day}日目の朝が来ました。".component(),
                 "昨晩は誰も襲われませんでした。".component(),
@@ -177,6 +177,15 @@ object StartCommand : Command("start") {
             )
             delay(5000)
         } else {
+            server!!.playSound(
+                Sound.sound(
+                    org.bukkit.Sound.ENTITY_PLAYER_DEATH.key,
+                    Sound.Source.MASTER,
+                    1f,
+                    1f
+                )
+            )
+
             plugin.runSync {
                 deadPlayers.forEach {
                     it.player.gameMode = GameMode.SPECTATOR

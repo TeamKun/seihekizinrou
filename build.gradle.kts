@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.5.10"
+    kotlin("jvm") version "1.5.20"
 }
 
 group = "net.kunmc.lab"
@@ -12,7 +12,7 @@ repositories {
 }
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.10")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.20")
     implementation("com.destroystokyo.paper", "paper-api", "1.16.5-R0.1-SNAPSHOT")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0")
     compileOnly("dev.kotx", "flylib-reloaded", "0.2.25")
