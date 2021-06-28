@@ -152,110 +152,239 @@
  *
  */
 
-plugins {
-    kotlin("jvm") version "1.5.20"
-    kotlin("plugin.serialization") version "1.5.20"
+package net.kunmc.lab.seihekizinrou.utils
+
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
+import java.time.*
+import java.time.format.*
+
+fun Any.asJsonString() = Json.encodeToString(this)
+
+fun String.asJsonElement() = Json.parseToJsonElement(this)
+fun String.asJsonObject() = Json.parseToJsonElement(this).jsonObject
+fun String.asJsonArray() = Json.parseToJsonElement(this).jsonArray
+
+fun Any.asJsonElement() = asJsonString().asJsonElement()
+fun Any.asJsonObject() = asJsonString().asJsonObject()
+fun Any.asJsonArray() = asJsonString().asJsonArray()
+
+inline fun <reified T> String.parseToObject() = Json.decodeFromString<T>(this)
+
+fun JsonObject.getString(key: String) = get(key)!!.jsonPrimitive.content
+fun JsonObject.getStringOrNull(key: String) = try {
+    get(key)?.jsonPrimitive?.contentOrNull
+} catch (e: Exception) {
+    null
 }
 
-group = "net.kunmc.lab"
-version = "0.0.1"
-
-repositories {
-    mavenCentral()
-    maven("https://s01.oss.sonatype.org/service/local/repositories/releases/content/")
-    maven("https://papermc.io/repo/repository/maven-public/")
+fun JsonObject.getInt(key: String) = get(key)!!.jsonPrimitive.int
+fun JsonObject.getIntOrNull(key: String) = try {
+    get(key)?.jsonPrimitive?.intOrNull
+} catch (e: Exception) {
+    null
 }
 
-dependencies {
-    compileOnly(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.20")
-    implementation("com.destroystokyo.paper", "paper-api", "1.16.5-R0.1-SNAPSHOT")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0")
-    compileOnly("io.ktor:ktor-client-okhttp:1.6.0")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.1")
-    compileOnly("dev.kotx", "flylib-reloaded", "0.2.35")
+fun JsonObject.getLong(key: String) = get(key)!!.jsonPrimitive.long
+fun JsonObject.getLongOrNull(key: String) = try {
+    get(key)?.jsonPrimitive?.longOrNull
+} catch (e: Exception) {
+    null
 }
 
-tasks {
-    compileKotlin {
-        kotlinOptions {
-            jvmTarget = "1.8"
-        }
-    }
+fun JsonObject.getDouble(key: String) = get(key)!!.jsonPrimitive.double
+fun JsonObject.getDoubleOrNull(key: String) = try {
+    get(key)?.jsonPrimitive?.doubleOrNull
+} catch (e: Exception) {
+    null
+}
 
-    processResources {
-        from(sourceSets.main.get().resources.srcDirs) {
-            filter { it.replace("<@version@>", project.version.toString()) }
-        }
-    }
+fun JsonObject.getFloat(key: String) = get(key)!!.jsonPrimitive.float
+fun JsonObject.getFloatOrNull(key: String) = try {
+    get(key)?.jsonPrimitive?.floatOrNull
+} catch (e: Exception) {
+    null
+}
 
-    jar {
-        from(configurations.compileOnly.get().map { if (it.isDirectory) it else zipTree(it) })
-    }
+fun JsonObject.getBoolean(key: String) = get(key)!!.jsonPrimitive.boolean
+fun JsonObject.getBooleanOrNull(key: String) = try {
+    get(key)?.jsonPrimitive?.booleanOrNull
+} catch (e: Exception) {
+    null
+}
 
-    create("package") {
-        dependsOn(jar)
-        doLast {
-            copy {
-                from(jar)
-                into(file("./output"))
-            }
-        }
-    }
+fun JsonObject.getInstant(key: String) = get(key)!!
+    .jsonPrimitive
+    .content
+    .let { DateTimeFormatter.ISO_DATE_TIME.parse(it) }
+    .let { Instant.from(it) }
 
-    create<Copy>("buildPlugin") {
-        group = "plugin"
-        from(jar)
-        val dest = File(projectDir, "server/plugins")
-        if (File(dest, jar.get().archiveFileName.get()).exists()) dest.delete()
-        into(dest)
-    }
+fun JsonObject.getInstantOrNull(key: String) = try {
+    get(key)
+        ?.jsonPrimitive
+        ?.content
+        ?.let { DateTimeFormatter.ISO_DATE_TIME.parse(it) }
+        ?.let { Instant.from(it) }
+} catch (e: Exception) {
+    null
+}
 
-    create<DefaultTask>("setupWorkspace") {
-        group = "plugin"
-        doLast {
-            val paperDir = File(projectDir, "server")
+fun JsonObject.getPrimitive(key: String) = get(key)!!.jsonPrimitive
+fun JsonObject.getPrimitiveOrNull(key: String) = try {
+    get(key)?.jsonPrimitive
+} catch (e: Exception) {
+    null
+}
 
-            paperDir.mkdirs()
+fun JsonObject.getObject(key: String) = get(key)!!.jsonObject
+fun JsonObject.getObjectOrNull(key: String) = try {
+    get(key)?.jsonObject
+} catch (e: Exception) {
+    null
+}
 
-            val download by registering(de.undercouch.gradle.tasks.download.Download::class) {
-                src("https://papermc.io/api/v2/projects/paper/versions/1.16.5/builds/576/downloads/paper-1.16.5-576.jar")
-                dest(paperDir)
-            }
-            val paper = download.get().outputFiles.first()
+fun JsonObject.getArray(key: String) = get(key)!!.jsonArray
+fun JsonObject.getArrayOrNull(key: String) = try {
+    get(key)?.jsonArray
+} catch (e: Exception) {
+    null
+}
 
-            download.get().download()
+fun JsonObject.getObjectArray(key: String) = get(key)!!.jsonArray.map { it.jsonObject }
+fun JsonObject.getPrimitiveArray(key: String) = get(key)!!.jsonArray.map { it.jsonPrimitive }
+fun JsonObject.getArrayArray(key: String) = get(key)!!.jsonArray.map { it.jsonArray }
 
-            runCatching {
-                javaexec {
-                    workingDir(paperDir)
-                    main = "-jar"
-                    args("./${paper.name}", "nogui")
-                }
+fun JsonObject.getStringArray(key: String) = get(key)!!.jsonArray.map { it.jsonPrimitive.content }
+fun JsonObject.getLongArray(key: String) = get(key)!!.jsonArray.map { it.jsonPrimitive.long }
+fun JsonObject.getFloatArray(key: String) = get(key)!!.jsonArray.map { it.jsonPrimitive.float }
+fun JsonObject.getDoubleArray(key: String) = get(key)!!.jsonArray.map { it.jsonPrimitive.double }
+fun JsonObject.getBooleanArray(key: String) = get(key)!!.jsonArray.map { it.jsonPrimitive.boolean }
 
-                val eula = File(paperDir, "eula.txt")
-                eula.writeText(eula.readText(Charsets.UTF_8).replace("eula=false", "eula=true"), Charsets.UTF_8)
-                val serverProperties = File(paperDir, "server.properties")
-                serverProperties.writeText(
-                    serverProperties.readText(Charsets.UTF_8)
-                        .replace("online-mode=true", "online-mode=false")
-                        .replace("difficulty=easy", "difficulty=peaceful")
-                        .replace("spawn-protection=16", "spawn-protection=0")
-                        .replace("gamemode=survival", "gamemode=creative")
-                        .replace("level-name=world", "level-name=dev_world")
-                        .replace("level-type=default", "level-type=flat")
-                        .replace("motd=A Minecraft Server", "motd=Kotx Development Server")
-                        .replace("max-tick-time=60000", "max-tick-time=-1")
-                        .replace("view-distance=10", "view-distance=16"), Charsets.UTF_8
-                )
-                val runBat = File(paperDir, "run.bat")
-                if (!runBat.exists()) {
-                    runBat.createNewFile()
-                    runBat.writeText("java -jar ./${paper.name} nogui", Charsets.UTF_8)
-                }
-            }.onFailure {
-                it.printStackTrace()
-            }
-        }
-    }
+fun JsonObject.getObjectArrayOrNull(key: String) = try {
+    get(key)?.jsonArray?.map { it.jsonObject }
+} catch (e: Exception) {
+    null
+}
+
+fun JsonObject.getPrimitiveArrayOrNull(key: String) = try {
+    get(key)?.jsonArray?.map { it.jsonPrimitive }
+} catch (e: Exception) {
+    null
+}
+
+fun JsonObject.getArrayArrayOrNull(key: String) = try {
+    get(key)?.jsonArray?.map { it.jsonArray }
+} catch (e: Exception) {
+    null
+}
+
+fun JsonObject.getStringArrayOrNull(key: String) = try {
+    get(key)?.jsonArray?.map { it.jsonPrimitive.contentOrNull }
+} catch (e: Exception) {
+    null
+}
+fun JsonObject.getLongArrayOrNull(key: String) = try {
+    get(key)?.jsonArray?.map { it.jsonPrimitive.longOrNull }
+} catch (e: Exception) {
+    null
+}
+fun JsonObject.getFloatArrayOrNull(key: String) = try {
+    get(key)?.jsonArray?.map { it.jsonPrimitive.floatOrNull }
+} catch (e: Exception) {
+    null
+}
+fun JsonObject.getDoubleArrayOrNull(key: String) = try {
+    get(key)?.jsonArray?.map { it.jsonPrimitive.doubleOrNull }
+} catch (e: Exception) {
+    null
+}
+fun JsonObject.getBooleanArrayOrNull(key: String) = try {
+    get(key)?.jsonArray?.map { it.jsonPrimitive.booleanOrNull }
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getString(key: String) = jsonObject[key]!!.jsonPrimitive.content
+fun JsonElement.getStringOrNull(key: String) = try {
+    jsonObject[key]?.jsonPrimitive?.contentOrNull
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getInt(key: String) = jsonObject[key]!!.jsonPrimitive.int
+fun JsonElement.getIntOrNull(key: String) = try {
+    jsonObject[key]?.jsonPrimitive?.intOrNull
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getLong(key: String) = jsonObject[key]!!.jsonPrimitive.long
+fun JsonElement.getLongOrNull(key: String) = try {
+    jsonObject[key]?.jsonPrimitive?.longOrNull
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getDouble(key: String) = jsonObject[key]!!.jsonPrimitive.double
+fun JsonElement.getDoubleOrNull(key: String) = try {
+    jsonObject[key]?.jsonPrimitive?.doubleOrNull
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getFloat(key: String) = jsonObject[key]!!.jsonPrimitive.float
+fun JsonElement.getFloatOrNull(key: String) = try {
+    jsonObject[key]?.jsonPrimitive?.floatOrNull
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getBoolean(key: String) = jsonObject[key]!!.jsonPrimitive.boolean
+fun JsonElement.getBooleanOrNull(key: String) = try {
+    jsonObject[key]?.jsonPrimitive?.booleanOrNull
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getPrimitive(key: String) = jsonObject[key]!!.jsonPrimitive
+fun JsonElement.getPrimitiveOrNull(key: String) = try {
+    jsonObject[key]?.jsonPrimitive
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getObject(key: String) = jsonObject[key]!!.jsonObject
+fun JsonElement.getObjectOrNull(key: String) = try {
+    jsonObject[key]?.jsonObject
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getArray(key: String) = jsonObject[key]!!.jsonArray
+fun JsonElement.getArrayOrNull(key: String) = try {
+    jsonObject[key]?.jsonArray
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getObjectArray(key: String) = jsonObject[key]!!.jsonArray.map { it.jsonObject }
+fun JsonElement.getPrimitiveArray(key: String) = jsonObject[key]!!.jsonArray.map { it.jsonPrimitive }
+fun JsonElement.getArrayArray(key: String) = jsonObject[key]!!.jsonArray.map { it.jsonArray }
+
+fun JsonElement.getObjectArrayOrNull(key: String) = try {
+    jsonObject[key]?.jsonArray?.map { it.jsonObject }
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getPrimitiveArrayOrNull(key: String) = try {
+    jsonObject[key]?.jsonArray?.map { it.jsonPrimitive }
+} catch (e: Exception) {
+    null
+}
+
+fun JsonElement.getArrayArrayOrNull(key: String) = try {
+    jsonObject[key]?.jsonArray?.map { it.jsonArray }
+} catch (e: Exception) {
+    null
 }

@@ -152,110 +152,58 @@
  *
  */
 
-plugins {
-    kotlin("jvm") version "1.5.20"
-    kotlin("plugin.serialization") version "1.5.20"
-}
+package net.kunmc.lab.seihekizinrou.utils
 
-group = "net.kunmc.lab"
-version = "0.0.1"
+import dev.kotx.flylib.utils.*
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.util.*
+import org.bukkit.*
+import org.bukkit.inventory.*
+import org.bukkit.inventory.meta.*
+import java.util.*
 
-repositories {
-    mavenCentral()
-    maven("https://s01.oss.sonatype.org/service/local/repositories/releases/content/")
-    maven("https://papermc.io/repo/repository/maven-public/")
-}
-
-dependencies {
-    compileOnly(kotlin("stdlib"))
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.20")
-    implementation("com.destroystokyo.paper", "paper-api", "1.16.5-R0.1-SNAPSHOT")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0")
-    compileOnly("io.ktor:ktor-client-okhttp:1.6.0")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.1")
-    compileOnly("dev.kotx", "flylib-reloaded", "0.2.35")
-}
-
-tasks {
-    compileKotlin {
-        kotlinOptions {
-            jvmTarget = "1.8"
-        }
+@Suppress("EXPERIMENTAL_IS_NOT_ENABLED")
+object HeadUtil {
+    private val client = HttpClient(OkHttp) {
+        expectSuccess = false
     }
 
-    processResources {
-        from(sourceSets.main.get().resources.srcDirs) {
-            filter { it.replace("<@version@>", project.version.toString()) }
-        }
-    }
+    private val heads = mutableMapOf<String, ItemStack>()
 
-    jar {
-        from(configurations.compileOnly.get().map { if (it.isDirectory) it else zipTree(it) })
-    }
+    @OptIn(InternalAPI::class)
+    suspend fun getHead(server: Server, name: String): ItemStack? {
+//        val uuid = server.onlinePlayers.find { it.name == name }?.uniqueId?.toString()?.replace("-", "")
+//            ?: client.get<String>("https://api.mojang.com/user/profile/agent/minecraft/name/$name").asJsonObject().getStringOrNull("id")
+//            ?: return null
 
-    create("package") {
-        dependsOn(jar)
-        doLast {
-            copy {
-                from(jar)
-                into(file("./output"))
-            }
-        }
-    }
+        val uuid = client.get<String>("https://api.mojang.com/user/profile/agent/minecraft/name/$name").asJsonObject().getStringOrNull("id")
+            ?: return null
 
-    create<Copy>("buildPlugin") {
-        group = "plugin"
-        from(jar)
-        val dest = File(projectDir, "server/plugins")
-        if (File(dest, jar.get().archiveFileName.get()).exists()) dest.delete()
-        into(dest)
-    }
+        if (heads.contains(uuid)) return heads[uuid]
 
-    create<DefaultTask>("setupWorkspace") {
-        group = "plugin"
-        doLast {
-            val paperDir = File(projectDir, "server")
+        val profileResponse = client.get<HttpStatement>("https://sessionserver.mojang.com/session/minecraft/profile/$uuid").execute()
 
-            paperDir.mkdirs()
+        if (profileResponse.status != HttpStatusCode.OK) return null
 
-            val download by registering(de.undercouch.gradle.tasks.download.Download::class) {
-                src("https://papermc.io/api/v2/projects/paper/versions/1.16.5/builds/576/downloads/paper-1.16.5-576.jar")
-                dest(paperDir)
-            }
-            val paper = download.get().outputFiles.first()
+        val profile = client.get<String>("https://sessionserver.mojang.com/session/minecraft/profile/$uuid").asJsonObject()
+        val properties = profile.getObjectArrayOrNull("properties") ?: return null
+        val textures = properties.find { it.getStringOrNull("name") == "textures" }?.getStringOrNull("value")?.decodeBase64String()?.asJsonObject() ?: return null
+        val url = textures.getObjectOrNull("textures")?.getObjectOrNull("SKIN")?.getStringOrNull("url") ?: return null
 
-            download.get().download()
+        val head = item(Material.PLAYER_HEAD)
 
-            runCatching {
-                javaexec {
-                    workingDir(paperDir)
-                    main = "-jar"
-                    args("./${paper.name}", "nogui")
-                }
+        val skin = "{\"textures\":{\"SKIN\":{\"url\":\"$url\"}}}".encodeBase64()
 
-                val eula = File(paperDir, "eula.txt")
-                eula.writeText(eula.readText(Charsets.UTF_8).replace("eula=false", "eula=true"), Charsets.UTF_8)
-                val serverProperties = File(paperDir, "server.properties")
-                serverProperties.writeText(
-                    serverProperties.readText(Charsets.UTF_8)
-                        .replace("online-mode=true", "online-mode=false")
-                        .replace("difficulty=easy", "difficulty=peaceful")
-                        .replace("spawn-protection=16", "spawn-protection=0")
-                        .replace("gamemode=survival", "gamemode=creative")
-                        .replace("level-name=world", "level-name=dev_world")
-                        .replace("level-type=default", "level-type=flat")
-                        .replace("motd=A Minecraft Server", "motd=Kotx Development Server")
-                        .replace("max-tick-time=60000", "max-tick-time=-1")
-                        .replace("view-distance=10", "view-distance=16"), Charsets.UTF_8
-                )
-                val runBat = File(paperDir, "run.bat")
-                if (!runBat.exists()) {
-                    runBat.createNewFile()
-                    runBat.writeText("java -jar ./${paper.name} nogui", Charsets.UTF_8)
-                }
-            }.onFailure {
-                it.printStackTrace()
-            }
-        }
+        Bukkit.getUnsafe().modifyItemStack(head, "{SkullOwner:{Id:\"${UUID(uuid.hashCode().toLong(), uuid.hashCode().toLong())}\",Properties:{textures:[{Value:\"$skin\"}]}}}")
+
+        val meta = head.itemMeta as SkullMeta
+        meta.displayName(name.component())
+        head.itemMeta = meta
+
+        return head.also { heads[uuid] = it }
     }
 }

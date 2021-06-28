@@ -1,4 +1,4 @@
 api-version: 1.16
 name: SeihekiZinrou
-version: 0.0.1
+version: <@version@>
 main: net.kunmc.lab.seihekizinrou.SeihekiZinrou
